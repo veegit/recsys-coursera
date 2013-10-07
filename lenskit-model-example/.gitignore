@@ -1,4 +1,5 @@
-.classpath
-.hg_archival.txt
-.hgignore
-.settings
+/.hg_archival.txt
+/.hgignore
+/.classpath
+/target
+/.settings
