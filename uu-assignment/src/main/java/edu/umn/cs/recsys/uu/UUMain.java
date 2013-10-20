@@ -1,8 +1,12 @@
 package edu.umn.cs.recsys.uu;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import edu.umn.cs.recsys.dao.*;
+import java.io.File;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.grouplens.lenskit.ItemScorer;
 import org.grouplens.lenskit.RecommenderBuildException;
 import org.grouplens.lenskit.core.LenskitConfiguration;
@@ -14,16 +18,20 @@ import org.grouplens.lenskit.vectors.SparseVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
+import edu.umn.cs.recsys.dao.ItemTitleDAO;
+import edu.umn.cs.recsys.dao.MOOCItemDAO;
+import edu.umn.cs.recsys.dao.MOOCRatingDAO;
+import edu.umn.cs.recsys.dao.MOOCUserDAO;
+import edu.umn.cs.recsys.dao.RatingFile;
+import edu.umn.cs.recsys.dao.TitleFile;
+import edu.umn.cs.recsys.dao.UserFile;
 
 /**
  * Main class for running the user-user assignment.  Each command line argument is a user:item
- * pair to score.
+ * pair to score
  *
  * <ul>
  * <li>Revision 3: make compatible with Java 6</li>
