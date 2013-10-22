@@ -68,12 +68,14 @@ public class UUMain {
 
         for (Map.Entry<Long,Set<Long>> scoreRequest: toScore.entrySet()) {
             long user = scoreRequest.getKey();
-            Set<Long> items = scoreRequest.getValue();
+            Set<Long> items = titleDAO.getItemIds();
             logger.info("scoring {} items for user {}", items.size(), user);
             // We call the score method that takes a set of items.
             // AbstractItemScorer delegates this method to the one you are supposed to implement.
             SparseVector scores = scorer.score(user, items);
-            for (long item: items) {
+            int max = 3;
+            for (long item: scores.keysByValue(true)) {
+            	if(--max < 0) break;
                 String score;
                 if (scores.containsKey(item)) {
                     score = String.format(Locale.ROOT, "%.4f", scores.get(item));
