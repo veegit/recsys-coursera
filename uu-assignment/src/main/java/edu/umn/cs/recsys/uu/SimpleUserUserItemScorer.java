@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.PriorityQueue;
 
 import javax.annotation.Nonnull;
@@ -25,7 +24,6 @@ import org.grouplens.lenskit.vectors.MutableSparseVector;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
 import org.grouplens.lenskit.vectors.Vectors;
-import org.grouplens.lenskit.vectors.similarity.CosineVectorSimilarity;
 import org.grouplens.lenskit.vectors.similarity.PearsonCorrelation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +39,9 @@ public class SimpleUserUserItemScorer extends AbstractItemScorer {
     private final UserEventDAO userDao;
     private final ItemEventDAO itemDao;
     private final UserDAO allUserDao;
-    
-    private final PearsonCorrelation cosineVectorSimilarity = new PearsonCorrelation();
+
+    //private final PearsonCorrelation cosineVectorSimilarity = new PearsonCorrelation();
+    private final Correlation cosineVectorSimilarity = new Correlation();
 
     @Inject
     public SimpleUserUserItemScorer(UserEventDAO udao, ItemEventDAO idao, UserDAO allUserDao) {
@@ -59,11 +58,11 @@ public class SimpleUserUserItemScorer extends AbstractItemScorer {
         MutableSparseVector meanCenteredUserVector = userVector.mutableCopy();
         //meanCenteredUserVector.add(userVector.mean() * -1);
         UserScore[] userScores = topN(user, meanCenteredUserVector);
-        
+
         for(UserScore us : userScores) {
         	System.out.format("%s %s %s %s\n",user,us.getUserId(),us.getScore(),getUserRatingVector(us.getUserId()).toString());
         }
-        
+
         for (VectorEntry e: scores.fast(VectorEntry.State.EITHER)) {
         	long item = e.getKey();
             logger.debug("Score for Item :{}", item);
@@ -105,7 +104,7 @@ public class SimpleUserUserItemScorer extends AbstractItemScorer {
         for (long aUser : users) {
             MutableSparseVector aUserVector = getUserRatingVector(aUser).mutableCopy();
     	    //aUserVector.add(aUserVector.mean() * -1);
-    	    Double similarity = cosineVectorSimilarity.similarity(meanCenteredUserVector, aUserVector);
+    	    Double similarity = cosineVectorSimilarity.similarity2(meanCenteredUserVector, aUserVector);
 
     	    /*
     	     * If the list of user contains the user against whom we are calculating the
@@ -154,7 +153,7 @@ class UserScore {
 
 class Correlation extends PearsonCorrelation {
 	private static final long serialVersionUID = 8454471996355493876L;
-	
+
 	public Correlation() {
 		super();
 	}
@@ -182,7 +181,7 @@ class Correlation extends PearsonCorrelation {
         int nCoratings = 0;
         LongSortedSet keys1 = vec1.keySet();
         LongSortedSet keys2 = vec2.keySet();
-        
+
         for (long key: LongUtils.setUnion(keys1, keys2)) {
             final double v1 = vec1.containsKey(key)?vec1.get(key):0.0 - mu1;
             final double v2 = vec2.containsKey(key)?vec2.get(key):0.0 - mu2;
@@ -198,4 +197,41 @@ class Correlation extends PearsonCorrelation {
             return dot / (sqrt(var1 * var2));
         }
     }
+
+	public double similarity2(SparseVector vec1, SparseVector vec2) {
+	        // First check for empty vectors - then we can assume at least one element
+	        if (vec1.isEmpty() || vec2.isEmpty()) {
+	            return 0;
+	        }
+
+	        /*
+	         * Basic similarity: walk in parallel across the two vectors, computing
+	         * the dot product and simultaneously computing the variance within each
+	         * vector of the items also contained in the other vector.  Pearson
+	         * correlation only considers items shared by both vectors; other items
+	         * are discarded for the purpose of similarity computation.
+	         */
+	        final double mu1 = vec1.mean();
+	        final double mu2 = vec2.mean();
+
+	        double var1 = 0;
+	        double var2 = 0;
+	        double dot = 0;
+	        int nCoratings = 0;
+
+	        for (Pair<VectorEntry,VectorEntry> pair: Vectors.fastIntersect(vec1, vec2)) {
+	            final double v1 = pair.getLeft().getValue() - mu1;
+	            final double v2 = pair.getRight().getValue() - mu2;
+	            var1 += v1 * v1;
+	            var2 += v2 * v2;
+	            dot += v1 * v2;
+	            nCoratings += 1;
+	        }
+
+	        if (nCoratings == 0) {
+	            return 0;
+	        } else {
+	            return dot / (sqrt(var1 * var2));
+	        }
+	    }
 }
