@@ -1,7 +1,11 @@
 package edu.umn.cs.recsys;
 
-import com.google.common.collect.ImmutableList;
-import edu.umn.cs.recsys.dao.ItemTagDAO;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.annotation.Nonnull;
+
 import org.grouplens.lenskit.core.LenskitRecommender;
 import org.grouplens.lenskit.eval.algorithm.AlgorithmInstance;
 import org.grouplens.lenskit.eval.data.traintest.TTDataSet;
@@ -10,23 +14,25 @@ import org.grouplens.lenskit.eval.metrics.TestUserMetricAccumulator;
 import org.grouplens.lenskit.eval.metrics.topn.ItemSelectors;
 import org.grouplens.lenskit.eval.traintest.TestUser;
 import org.grouplens.lenskit.scored.ScoredId;
-import org.grouplens.lenskit.vectors.MutableSparseVector;
-import org.grouplens.lenskit.vectors.VectorEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import java.util.List;
+import com.google.common.collect.ImmutableList;
+
+import edu.umn.cs.recsys.dao.ItemTagDAO;
 
 /**
  * A metric that measures the tag entropy of the recommended items.
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
  */
 public class TagEntropyMetric extends AbstractTestUserMetric {
+	private static Logger logger = LoggerFactory.getLogger(TagEntropyMetric.class);
     private final int listSize;
     private final List<String> columns;
 
     /**
      * Construct a new tag entropy metric.
-     * 
+     *
      * @param nitems The number of items to request.
      */
     public TagEntropyMetric(int nitems) {
@@ -91,10 +97,20 @@ public class TagEntropyMetric extends AbstractTestUserMetric {
             ItemTagDAO tagDAO = lkrec.get(ItemTagDAO.class);
             TagVocabulary vocab = lkrec.get(TagVocabulary.class);
 
-            double entropy = 0;
-
-            // TODO Implement the entropy metric
-
+            double entropy = 0.0;
+            for (ScoredId score : recommendations) {
+            	long item = score.getId();
+            	Set<Long> set = new HashSet<Long>();
+            	for (String tag : tagDAO.getItemTags(item)) {
+            		set.add(vocab.getTagId(tag));
+            	}
+            	entropy += (1D / set.size());
+            }
+            logger.debug("P(t/m) " + entropy);
+            entropy /= listSize;
+            logger.debug("P(t/l) " + entropy);
+            entropy = -1 * entropy * Math.log(entropy) / Math.log(2);
+            entropy = Double.isNaN(entropy)?0.0:entropy;
             totalEntropy += entropy;
             userCount += 1;
             return new Object[]{entropy};
