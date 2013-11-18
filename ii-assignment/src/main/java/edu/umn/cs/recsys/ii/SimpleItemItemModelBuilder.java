@@ -1,8 +1,17 @@
 package edu.umn.cs.recsys.ii;
 
-import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.grouplens.lenskit.collections.LongUtils;
 import org.grouplens.lenskit.core.Transient;
 import org.grouplens.lenskit.cursors.Cursor;
@@ -13,20 +22,12 @@ import org.grouplens.lenskit.data.history.RatingVectorUserHistorySummarizer;
 import org.grouplens.lenskit.data.history.UserHistory;
 import org.grouplens.lenskit.scored.ScoredId;
 import org.grouplens.lenskit.scored.ScoredIdListBuilder;
-import org.grouplens.lenskit.scored.ScoredIds;
 import org.grouplens.lenskit.vectors.ImmutableSparseVector;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
-import org.grouplens.lenskit.vectors.SparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
+import org.grouplens.lenskit.vectors.similarity.CosineVectorSimilarity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
@@ -34,6 +35,7 @@ import java.util.Map;
 public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel> {
     private final ItemDAO itemDao;
     private final UserEventDAO userEventDao;
+    private final CosineVectorSimilarity cosineVectorSimilarity = new CosineVectorSimilarity();
     private static final Logger logger = LoggerFactory.getLogger(SimpleItemItemModelBuilder.class);;
 
     @Inject
@@ -52,11 +54,31 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         // Get all items - you might find this useful
         LongSortedSet items = LongUtils.packedSet(itemVectors.keySet());
         // Map items to vectors of item similarities
-        Map<Long,MutableSparseVector> itemSimilarities = new HashMap<Long, MutableSparseVector>();
+        Map<Long,List<ScoredId>> itemSimilarities = new HashMap<Long, List<ScoredId>>();
 
         // TODO Compute the similarities between each pair of items
         // It will need to be in a map of longs to lists of Scored IDs to store in the model
-        return new SimpleItemItemModel(Collections.EMPTY_MAP);
+        for (Entry<Long, ImmutableSparseVector> entry : itemVectors.entrySet()) {
+        	ScoredIdListBuilder listBuilder = new ScoredIdListBuilder();
+        	for (long item: items) {
+        		if (item == entry.getKey()) {
+        			continue;
+        		}
+        		double sim = cosineVectorSimilarity.similarity(entry.getValue(), itemVectors.get(item));
+        		if (sim > 0) {
+        			listBuilder.add(item, sim);
+        		}
+        	}
+        	listBuilder.sort(new Comparator<ScoredId>() {
+
+				@Override
+				public int compare(ScoredId o1, ScoredId o2) {
+					return Double.compare(o2.getScore(),o1.getScore());
+				}
+			});
+        	itemSimilarities.put(entry.getKey(), listBuilder.build());
+        }
+        return new SimpleItemItemModel(itemSimilarities);
     }
 
     /**
@@ -81,6 +103,12 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                 MutableSparseVector vector = RatingVectorUserHistorySummarizer.makeRatingVector(evt).mutableCopy();
                 // vector is now the user's rating vector
                 // TODO Normalize this vector and store the ratings in the item data
+                long user = evt.getUserId();
+                double mean = vector.mean();
+                for (VectorEntry e: vector.fast(VectorEntry.State.EITHER)) {
+                	long item = e.getKey();
+                	itemData.get(item).put(user, e.getValue() - mean);
+                }
             }
         } finally {
             stream.close();
