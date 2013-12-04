@@ -185,8 +185,31 @@
 								<configuration>
 									<executable>target/bin/run-ii</executable>
 									<arguments>
-										<argument>--basket</argument>
-										<argument>77</argument>
+										<argument>2412:11</argument>
+										<argument>2412:9331</argument>
+										<argument>2412:857</argument>
+										<argument>2412:9741</argument>
+										<argument>2412:7443</argument>
+										<argument>2351:243</argument>
+										<argument>2351:453</argument>
+										<argument>2351:9802</argument>
+										<argument>2351:9806</argument>
+										<argument>2351:1900</argument>
+										<argument>2356:9331</argument>
+										<argument>2356:77</argument>
+										<argument>2356:641</argument>
+										<argument>2356:568</argument>
+										<argument>2356:629</argument>
+										<argument>87:153</argument>
+										<argument>87:197</argument>
+										<argument>87:2024</argument>
+										<argument>87:10020</argument>
+										<argument>87:9741</argument>
+										<argument>833:3049</argument>
+										<argument>833:424</argument>
+										<argument>833:807</argument>
+										<argument>833:786</argument>
+										<argument>833:275</argument>
 									</arguments>
 								</configuration>
 							</execution>
@@ -213,7 +236,8 @@
 									<executable>target/bin/run-ii</executable>
 									<arguments>
 										<argument>--basket</argument>
-										<argument>77</argument>
+										<argument>36658</argument>
+										<argument>85</argument>
 									</arguments>
 								</configuration>
 							</execution>

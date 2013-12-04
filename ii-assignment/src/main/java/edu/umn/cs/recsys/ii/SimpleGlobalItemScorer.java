@@ -41,6 +41,8 @@ public class SimpleGlobalItemScorer extends AbstractGlobalItemScorer {
         	List<ScoredId> neighbors = model.getNeighbors(item);
         	double sum = 0.0;
         	for (ScoredId score : neighbors) {
+        		if (!scores.containsKey(score.getId()))
+        			continue;
         		scores.add(score.getId(), score.getScore());
         	}
         }
