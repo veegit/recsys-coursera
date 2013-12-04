@@ -1,0 +1,5 @@
+36657,0.5079,X-Men (2000)
+105,0.2746,Back to the Future (1985)
+558,0.2706,Spider-Man 2 (2004)
+1891,0.2681,Star Wars: Episode V - The Empire Strikes Back (1980)
+11,0.2364,Star Wars: Episode IV - A New Hope (1977)
